@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# Keep git-merge from going all interactive in git >= 1.7.10
+MERGE_AUTO_EDIT=no
+
+#!!! BASHISM !!! OSTYPE not in dash (?)
+if [ "x${OSTYPE}x" = "xdarwinx" ]; then
+    SRC_DIR="${HOME}/Applications/get_iplayer"
+    IS_MAC='true'
+    ECHO='echo -e'
+else
+    SRC_DIR="${HOME}/binaries/get_iplayer"
+    IS_MAC=
+    ECHO='/bin/echo -e'
+fi
+
+cd "$SRC_DIR" &> /dev/null || exit 0
+
+export no_proxy="git.infradead.org,${no_proxy}"
+
+MAN_DIR="${HOME}/man/man1"
+
+$ECHO "Fetching...\n" 1>&2
+
+# Update
+git fetch | "$PAGER"
+
+$ECHO "\nChanges:\n" 1>&2
+
+# Check changes
+CHANGELOG="${HOME}/tmp/u-g-i-git-log"
+git log HEAD..origin > "$CHANGELOG"
+if [ ! -s "$CHANGELOG" ]; then
+    echo "None." 1>&2
+    exit 0
+fi
+"$PAGER" "$CHANGELOG"
+
+echo 1>&2
+read -p "Press Enter to proceed..." 1>&2
+echo 1>&2
+
+# Merge
+git merge origin
+
+echo 1>&2
+
+echo "Updated get_iplayer to git HEAD." 1>&2
+echo -n "Installing manpage..."
+mkdir -p "$MAN_DIR"
+cp -f get_iplayer.1 "$MAN_DIR"
+cd "$MAN_DIR"
+ln -sf get_iplayer.1 get-iplayer.1
+
+read -p "Press Enter to exit..."
+echo 1>&2
