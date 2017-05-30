@@ -18,7 +18,7 @@ fi
 
 cd "$SRC_DIR" &> /dev/null || exit 0
 
-export no_proxy="git.infradead.org,${no_proxy}"
+export no_proxy="git.infradead.org,github.com,${no_proxy}"
 
 MAN_DIR="${HOME}/man/man1"
 
