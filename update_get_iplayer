@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+CHANGELOG_DIR="${TMP:-${TEMP:-${TMPDIR:-/tmp}}}"
+
 # Keep git-merge from going all interactive in git >= 1.7.10
 MERGE_AUTO_EDIT=no
 
@@ -28,7 +30,7 @@ git fetch | "$PAGER"
 $ECHO "\nChanges:\n" 1>&2
 
 # Check changes
-CHANGELOG="${HOME}/tmp/u-g-i-git-log"
+CHANGELOG="${CHANGELOG_DIR}/u-g-i-git-log"
 git log HEAD..origin > "$CHANGELOG"
 if [ ! -s "$CHANGELOG" ]; then
     echo "None." 1>&2
