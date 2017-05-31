@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# $1 (optional): install location. Defaults to ~/Applications on Mac, ~/binaries on other *n*x
+
 CHANGELOG_DIR="${TMP:-${TEMP:-${TMPDIR:-/tmp}}}"
 
 # Keep git-merge from going all interactive in git >= 1.7.10
@@ -7,47 +9,58 @@ MERGE_AUTO_EDIT=no
 
 #!!! BASHISM !!! OSTYPE not in dash (?)
 if [ "x${OSTYPE}x" = "xdarwinx" ]; then
-    SRC_DIR="${HOME}/Applications/get_iplayer"
+    SRC_DIR="${1:-${HOME}/Applications}"
     IS_MAC='true'
     ECHO='echo -e'
 else
-    SRC_DIR="${HOME}/binaries/get_iplayer"
+    SRC_DIR="${1:-${HOME}/binaries}"
     IS_MAC=
     ECHO='/bin/echo -e'
 fi
 
-cd "$SRC_DIR" &> /dev/null || exit 0
+export no_proxy="git.infradead.org,github.com${no_proxy:+,}${no_proxy}"
 
-export no_proxy="git.infradead.org,github.com,${no_proxy}"
+INSTALL_DIR="${SRC_DIR}/get_iplayer"
+
+if [ -d "$INSTALL_DIR" ] ; then
+    cd "$INSTALL_DIR" &> /dev/null || exit 1
+
+    $ECHO "Fetching...\n" 1>&2
+
+    # Update
+    git fetch | "$PAGER"
+
+    $ECHO "\nChanges:\n" 1>&2
+
+    # Check changes
+    CHANGELOG="${CHANGELOG_DIR}/u-g-i-git-log"
+    git log HEAD..origin > "$CHANGELOG"
+    if [ ! -s "$CHANGELOG" ]; then
+        echo "None." 1>&2
+        exit 0
+    fi
+    "$PAGER" "$CHANGELOG"
+
+    echo 1>&2
+    read -p "Press Enter to proceed..." 1>&2
+    echo 1>&2
+
+    # Merge
+    git merge origin
+
+    echo 1>&2
+
+    echo "Updated get_iplayer to git HEAD." 1>&2
+else
+    cd "$SRC_DIR" &> /dev/null || exit 2
+    git clone 'https://github.com/get-iplayer/get_iplayer.git'
+    cd "$INSTALL_DIR" &> /dev/null || exit 3
+fi
+
+# assert: We are in $INSTALL_DIR
 
 MAN_DIR="${HOME}/man/man1"
 
-$ECHO "Fetching...\n" 1>&2
-
-# Update
-git fetch | "$PAGER"
-
-$ECHO "\nChanges:\n" 1>&2
-
-# Check changes
-CHANGELOG="${CHANGELOG_DIR}/u-g-i-git-log"
-git log HEAD..origin > "$CHANGELOG"
-if [ ! -s "$CHANGELOG" ]; then
-    echo "None." 1>&2
-    exit 0
-fi
-"$PAGER" "$CHANGELOG"
-
-echo 1>&2
-read -p "Press Enter to proceed..." 1>&2
-echo 1>&2
-
-# Merge
-git merge origin
-
-echo 1>&2
-
-echo "Updated get_iplayer to git HEAD." 1>&2
 echo -n "Installing manpage..."
 mkdir -p "$MAN_DIR"
 cp -f get_iplayer.1 "$MAN_DIR"
