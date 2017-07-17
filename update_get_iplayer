@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
-# $1 (optional): install location. Defaults to ~/Applications on Mac, ~/binaries on other *n*x
+# $1 (optional): install location. Defaults to ~/Applications on Mac, ~/bin on other *n*x.
+# $2 (optional): user-writable man pages directory. Defaults to the first element if any
+#    of $MANPATH which is a subdir of $HOME (actually, to the man1 subdirectory of that
+#    directory), otherwise ~/man/man1.
 
 CHANGELOG_DIR="${TMP:-${TEMP:-${TMPDIR:-/tmp}}}"
 
@@ -13,7 +16,7 @@ if [ "x${OSTYPE}x" = "xdarwinx" ]; then
     IS_MAC='true'
     ECHO='echo -e'
 else
-    SRC_DIR="${1:-${HOME}/binaries}"
+    SRC_DIR="${1:-${HOME}/bin}"
     IS_MAC=
     ECHO='/bin/echo -e'
 fi
@@ -59,10 +62,12 @@ fi
 
 # assert: We are in $INSTALL_DIR
 
-MAN_DIR="${HOME}/man/man1"
+# Don't use grep's --max-count switch, for OpenBSD compatibility, use head instead
+MAN_DIR_ROOT="${2:-`manpath|tr ':' '\n'|grep "$HOME"|head -1`}"
+MAN_DIR="${MAN_DIR_ROOT:-${HOME}/man}/man1"
 
 echo -n "Installing manpage..."
-mkdir -p "$MAN_DIR"
+mkdir -p "$MAN_DIR" || exit 4
 cp -f get_iplayer.1 "$MAN_DIR"
 cd "$MAN_DIR"
 ln -sf get_iplayer.1 get-iplayer.1
